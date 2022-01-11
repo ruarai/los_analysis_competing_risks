@@ -63,6 +63,7 @@ make_pathway_probabilities <- function(
     theme_minimal()
   
   
+  dir.create(results_dir, showWarnings = FALSE)
   ggsave(paste0(results_dir, "/pathway_probs.png"),
          bg = 'white',
          width = 6,

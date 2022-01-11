@@ -33,11 +33,13 @@ make_results_survival_plots <- function(
     
     label_matrix <- summ_data$label %>% str_split_fixed(", ", n = 2)
     
+    age_class_col <- str_detect(label_matrix[1,], "age_class") %>% which()
+    coding_col <- if_else(age_class_col == 1, 2, 1)
     
     summ_data %>%
       select(-label) %>%
-      mutate(age_class = (label_matrix[,1] %>% str_split_fixed("=", n = 2))[,2],
-             coding = (label_matrix[,2] %>% str_split_fixed("=", n = 2))[,2]) %>%
+      mutate(age_class = (label_matrix[, age_class_col] %>% str_split_fixed("=", n = 2))[,2],
+             coding = (label_matrix[, coding_col] %>% str_split_fixed("=", n = 2))[,2]) %>%
       
       # Special case for onset_to_ward
       
@@ -82,8 +84,11 @@ make_results_survival_plots <- function(
   )
   
   
-  filt_type <- . %>% filter(age_type == "wide")
-  
+  list(
+    plot_ecdf = obs_data_ecdf,
+    plot_fits = all_fits_plot
+  ) %>%
+    write_rds(paste0(results_dir, "/surv_plots_data.rds"))
   
   plot_meta <- tribble(
     ~ i_comp, ~ i_age_type,
@@ -112,7 +117,6 @@ make_results_survival_plots <- function(
       
       geom_line(aes(x = time, y =  est),
                 color = col_estimates,
-                linetype = 'dotted',
                 data = all_fits_plot %>% filter_comp) +
       
       geom_ribbon(aes(x = time, ymin = lcl, ymax = ucl),

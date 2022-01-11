@@ -39,14 +39,14 @@ make_surv_ICU_to_next <- function(
   
   
   surv_fit_narrow <- flexsurvreg(
-    Surv(LoS, censor_code) ~ age_class_narrow + coding + shape(age_class_narrow) + shape(coding),
+    Surv(LoS, censor_code) ~ coding + shape(age_class_narrow),
     data = ICU_modelling,
     
     dist = "gamma"
   )
   
   surv_fit_wide <- flexsurvreg(
-    Surv(LoS, censor_code) ~ age_class_wide + coding + shape(age_class_wide) + shape(coding),
+    Surv(LoS, censor_code) ~ coding + shape(age_class_wide),
     data = ICU_modelling,
     
     dist = "gamma"
