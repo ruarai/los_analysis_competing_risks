@@ -16,7 +16,8 @@ make_results_tables <- function(
   round2 <- function(x) format(round(x, 2), nsmall = 2)
   
   pathway_results_tbl <- pathway_probabilities %>%
-    mutate(est = str_c(round3(prop_pathway), " (", round3(lower_95), ", ", round3(upper_95), ")")) %>%
+    mutate(est = str_c(round3(prop_pathway), " (", round3(lower_95), ", ", round3(upper_95), ")"),
+           coding = coding %>% str_replace_all("_", "-")) %>%
     
     select(age_class, n, coding, x, est)
   
@@ -110,38 +111,62 @@ make_results_tables <- function(
     write_csv(paste0(results_dir, "/los_estimates.csv"))
   
   
+  
+  
+  diag_fitting_data <- map_dfr(
+    list(onset_fits, ward_fits, ICU_fits, postICU_fits),
+    ~ .$data
+  )
+  
+  diag_data <- bind_rows(
+    
+    diag_fitting_data %>% 
+      group_by(coding, age_class = age_class_wide) %>%
+      summarise(n = n()) %>%
+      filter(coding != "unknown", coding != "censored") %>%
+      
+      mutate(i_age_type = "wide"),
+    
+    diag_fitting_data %>% 
+      group_by(coding, age_class = age_class_narrow) %>%
+      summarise(n = n()) %>%
+      filter(coding != "unknown", coding != "censored") %>%
+      
+      mutate(i_age_type = "narrow")
+  ) %>%
+    left_join(plot_meta %>% mutate(keep = TRUE),
+              by = c("coding" = "i_comp", "i_age_type")) %>%
+    drop_na(keep) %>% select(-c(keep, i_age_type))
+  
   make_ci <- function(center, lower, upper) {
     str_c(
       round2(center),
       str_c(" (", round2(lower) %>% str_trim(), ", ", round2(upper), ")")
-      )
+    )
   }
-  
   
   fits_tbl <- fits_final %>%
     mutate(mean_ci = make_ci(mean_est, mean_lcl, mean_ucl),
            shape_ci = make_ci(shape_est, shape_lcl, shape_ucl),
            rate_ci = make_ci(rate_est, rate_lcl, rate_ucl)) %>%
     
-    select(coding, age_class, mean_ci, shape_ci, rate_ci)
+    left_join(diag_data) %>%
+    mutate(n = replace_na(n, 0)) %>%
+    
+    mutate(coding = coding  %>% str_replace_all("_", "-")) %>%
+    
+    select(coding, age_class, n, mean_ci, shape_ci, rate_ci)
   
   
-  fits_latex <- kbl(
+  kbl(
     fits_tbl,
     format = "latex",
     booktabs = TRUE,
-    col.names = c("Pathway", "Age class", "Mean", "Shape", "Rate"),
-    align = c("l", "l", "r", "r", "r")
+    col.names = c("Pathway", "Age class", "n", "Mean", "Shape", "Rate"),
+    align = c("l", "l", "r", "r", "r", "r")
   ) %>%
     collapse_rows(columns = c(1, 2)) %>%
-    kable_styling(font_size = 8)
+    kable_styling(font_size = 8) %>%
+    write_file(paste0(results_dir, "/length_of_stay_estimates.tex"))
   
-  write_file(fits_latex, paste0(results_dir, "/length_of_stay_estimates.tex"))
-  
-  
-  
-  ggplot(fits_final) +
-    geom_linerange(aes(y = age_class, xmin = mean_lcl, xmax = mean_ucl)) +
-    
-    facet_wrap(~coding)
 }

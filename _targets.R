@@ -9,6 +9,9 @@ tar_option_set(packages = c(
   "tidyverse",
   "lubridate"
 ))
+library(tidyverse)
+library(lubridate)
+library(cowplot)
 
 library(future.callr)
 plan(callr)
@@ -17,65 +20,106 @@ plan(callr)
 source("../clinical_forecasting/R/state_data/NSW.R")
 source("R/common.R")
 
-source("R/surv_onset_to_ward.R")
+source("R/fit_meta.R")
+
+source("R/trunc_onset_to_ward.R")
+
 source("R/surv_ward_to_next.R")
 source("R/surv_ICU_to_next.R")
 source("R/surv_postICU_to_next.R")
 
-source("R/results_survival_plots.R")
-source("R/pathway_probabilities.R")
-source("R/results_tables.R")
+source("R/get_fit_aj.R")
+source("R/get_fit_params.R")
+source("R/get_fit_means.R")
+source("R/get_fit_total_los.R")
 
+source("R/export_fits.R")
 
-list(
+source("R/results_report_plots.R")
+source("R/results_report_plots_2.R")
+source("R/results_report_plots_3.R")
+
+pre_subsets <- list(
   tar_target(NSW_LHD_filter, NULL),
-  # 
-  # tar_target(results_name, "NSW_omi_mix_2022-01-04"),
-  # tar_target(linelist_path,"~/data_private/NSW/NSW_out_episode_2022_01_04.xlsx"),
-  # tar_target(minimum_date, ymd("2021-11-15")),
   
-  tar_target(results_name, "NSW_delta_2021-11-25"),
-  tar_target(linelist_path,"~/data_private/NSW/NSW_out_episode_2021_11_25.xlsx"),
-  tar_target(minimum_date, ymd("2021-07-07")),
-  
-  # tar_target(results_name, "NSW_omi_HNE_2022-01-04"),
-  # tar_target(linelist_path,"~/data_private/NSW/NSW_out_episode_2022_01_04.xlsx"),
-  # tar_target(minimum_date, ymd("2021-11-15")),
-  # tar_target(NSW_LHD_filter, "Hunter New England LHD"),
+  tar_target(results_name_prefix, "NSW_2022-01-18"),
+  tar_target(linelist_path,"~/data_private/NSW/NSW_out_episode_2022_01_18.xlsx"),
   
   
-  tar_target(results_dir, paste0("results/", results_name, "/")),
   
   tar_target(
     linelist_raw,
     {
       ll_data <- readxl::read_excel(linelist_path, sheet = 2)
-      
-      if(!is.null(NSW_LHD_filter)) {
-        ll_data <- ll_data %>%
-          filter(lhd_name == NSW_LHD_filter)
-      } else {
-        return(ll_data) 
-      }
     }
   ),
+  tar_target(
+    date_data_load,
+    linelist_raw %>% pull(load_date) %>% first() %>% as_date()
+  )
+)
+
+
+for_each_subset <- tar_map(
+  values = data_subsets,
+  unlist = FALSE,
+  names = "subset_name",
   
+  
+  tar_target(
+    results_dir, {
+      dir <- paste0("results/", results_name_prefix, "_", subset_name, "/")
+      dir.create(dir, showWarnings = FALSE)
+      return(dir)
+      }),
+
   
   tar_target(
     linelist_data,
+    {
+      ll_raw <- linelist_raw
+      
+      if(!is.na(LHD_filter)) {
+        ll_raw <- ll_raw %>%
+          filter(lhd_name == LHD_filter)
+      }
+      
+      ll_results <- read_NSW_linelist(
+        ll_raw,
+        strict_filtering = TRUE,
+        return_diagnostics = TRUE
+      ) 
+      
+      ll_data <- ll_results$data
+      print(date_start)
+      print(date_end)
+      print(LHD_filter)
+      
+      if(!is.na(date_start)) {
+        ll_data <- ll_data %>%
+          filter(dt_hosp_admission >= ymd(date_start))
+      }
+      
+      if(!is.na(date_end)) {
+        ll_data <- ll_data %>%
+          filter(dt_hosp_admission < ymd(date_end))
+      }
+      
+      ll_results$diagnostics %>%
+        pivot_longer(everything()) %>%
+        write_csv(paste0(results_dir, "/linelist_filtering.csv"))
+      
+      return(ll_data)
+    }
     
-    
-    read_NSW_linelist(linelist_raw) %>%
-      filter(dt_hosp_admission >= minimum_date)
   ),
   
   
   tar_target(
-    surv_onset_to_ward,
-    make_surv_onset_to_ward(
+    trunc_onset_to_ward,
+    make_trunc_onset_to_ward(
       linelist_data,
-      age_table_narrow = get_narrow_age_table(),
-      age_table_wide = get_wide_age_table()
+      date_data_load
     )
   ),
   
@@ -83,59 +127,131 @@ list(
   tar_target(
     surv_ward_to_next,
     make_surv_ward_to_next(
-      linelist_data,
-      age_table_narrow = get_narrow_age_table(),
-      age_table_wide = get_wide_age_table()
+      linelist_data
     )
   ),
   
   tar_target(
     surv_ICU_to_next,
     make_surv_ICU_to_next(
-      linelist_data,
-      age_table_narrow = get_narrow_age_table(),
-      age_table_wide = get_wide_age_table()
+      linelist_data
     )
   ),
   
   tar_target(
     surv_postICU_to_next,
     make_surv_postICU_to_next(
-      linelist_data,
-      age_table_narrow = get_narrow_age_table(),
-      age_table_wide = get_wide_age_table()
+      linelist_data
     )
   ),
   
+  
   tar_target(
-    results_survival_plots,
-    make_results_survival_plots(
-      surv_onset_to_ward, surv_ward_to_next, surv_ICU_to_next, surv_postICU_to_next,
-      age_table_narrow = get_narrow_age_table(),
-      age_table_wide = get_wide_age_table(),
-      results_dir
-    )
+    fit_aj,
+    get_fit_aj(
+      surv_ward_to_next,
+      surv_ICU_to_next,
+      surv_postICU_to_next
+    ) %>%
+      mutate(subset_name = subset_name)
   ),
   
   tar_target(
-    pathway_probabilities,
-    make_pathway_probabilities(
-      surv_ward_to_next, surv_ICU_to_next, surv_postICU_to_next,
-      results_dir
-    )
+    fit_params,
+    get_fit_params(
+      trunc_onset_to_ward,
+      surv_ward_to_next,
+      surv_ICU_to_next,
+      surv_postICU_to_next
+    ) %>%
+      mutate(subset_name = subset_name)
+  ),
+  tar_target(
+    fit_means,
+    get_fit_means(
+      trunc_onset_to_ward,
+      surv_ward_to_next,
+      surv_ICU_to_next,
+      surv_postICU_to_next
+    ) %>%
+      mutate(subset_name = subset_name)
+  ),
+  tar_target(
+    fit_total_los,
+    get_fit_total_los(
+      surv_ward_to_next,
+      surv_ICU_to_next,
+      surv_postICU_to_next
+    ) %>%
+      mutate(subset_name = subset_name)
   ),
   
+  
   tar_target(
-    results_tables,
-    make_results_tables(
-      surv_onset_to_ward, surv_ward_to_next, surv_ICU_to_next, surv_postICU_to_next,
-      pathway_probabilities,
-      age_table_narrow = get_narrow_age_table(),
-      age_table_wide = get_wide_age_table(),
+    fit_export_file,
+    export_fits(
+      fit_params,
       results_dir
-      
-    )
+    ),
+    format = "file"
   )
-  
 )
+
+list(
+  pre_subsets,
+  for_each_subset,
+  
+  
+  tar_combine(
+    all_aj,
+    for_each_subset[["fit_aj"]],
+    
+    command = dplyr::bind_rows(!!!.x)
+  ),
+  
+  tar_combine(
+    all_means,
+    for_each_subset[["fit_means"]],
+    
+    command = dplyr::bind_rows(!!!.x)
+  ),
+  
+  tar_combine(
+    all_total_los,
+    for_each_subset[["fit_total_los"]],
+    
+    command = dplyr::bind_rows(!!!.x)
+  ),
+  
+  tar_combine(
+    all_onset_fits,
+    for_each_subset[["trunc_onset_to_ward"]],
+    
+    command = list(!!!.x)
+  ),
+  
+  tar_target(
+    results_dir, {
+      dir <- paste0("results/", results_name_prefix, "_all", "/")
+      dir.create(dir, showWarnings = FALSE)
+      return(dir)
+    }),
+  
+  tar_target(
+    reporting_plots_1,
+    make_reporting_plots_1(all_aj, results_dir)
+  ),
+  
+  tar_target(
+    reporting_plots_2,
+    make_reporting_plots_2(all_means, results_dir)
+  ),
+  
+  tar_target(
+    reporting_plots_3,
+    make_reporting_plots_3(all_onset_fits, results_dir)
+  )
+)
+
+
 

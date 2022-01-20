@@ -4,8 +4,7 @@
 
 make_surv_onset_to_ward <- function(
   linelist_data,
-  age_table_narrow,
-  age_table_wide
+  date_data_load
 ) {
   require(flexsurv)
   
@@ -15,11 +14,13 @@ make_surv_onset_to_ward <- function(
       LoS = time_diff_to_days(dt_hosp_admission - as_datetime(date_onset)),
       LoS = if_else(LoS == 0, 0.01, LoS),
       
-      age_class_narrow = cut_age(age, age_table_narrow),
-      age_class_wide = cut_age(age, age_table_wide),
+      age_class_narrow = cut_age(age, get_narrow_age_table()),
+      age_class_wide = cut_age(age, get_wide_age_table()),
       
       coding = "onset_to_ward"
-    )
+    ) %>%
+    
+    filter(LoS <= 31) 
   
   surv_fit_narrow <- flexsurvreg(
     Surv(time = LoS) ~ 1,

@@ -1,8 +1,6 @@
 
 make_surv_ICU_to_next <- function(
-  linelist_data,
-  age_table_narrow,
-  age_table_wide
+  linelist_data
 ) {
   require(flexsurv)
   
@@ -30,27 +28,71 @@ make_surv_ICU_to_next <- function(
       censor_code = if_else(coding == "censored", 0, 1),
       
       
-      age_class_narrow = cut_age(age, age_table_narrow),
-      age_class_wide = cut_age(age, age_table_wide)) %>%
+      age_class_narrow = cut_age(age, get_narrow_age_table()),
+      age_class_wide = cut_age(age, get_wide_age_table())) %>%
     
     mutate(
       LoS = if_else(LoS == 0, 0.01, LoS)
-    )
-  
-  
-  surv_fit_narrow <- flexsurvreg(
-    Surv(LoS, censor_code) ~ coding + shape(age_class_narrow),
-    data = ICU_modelling,
+    ) %>%
     
-    dist = "gamma"
+    mutate(coding = if_else(coding == "censored", NA_character_, coding)) %>%
+    
+    select(coding, censor_code, LoS, age_class_narrow, age_class_wide) %>%
+    
+    filter(coding != "unknown")
+  
+  
+  dist_vec <- c(ICU_to_discharge = "gamma", ICU_to_postICU = "gamma", ICU_to_death = "gamma")
+  
+  optim_control_list <- list(
+    fnscale = 100,
+    
+    reltol = 1e-9,
+    
+    maxit = 100,
+    trace = 3
   )
   
-  surv_fit_wide <- flexsurvreg(
-    Surv(LoS, censor_code) ~ coding + shape(age_class_wide),
+  
+  surv_fit_narrow <- tryCatch(flexsurvmix(
+    Surv(LoS, censor_code) ~ 1,
+    event = coding,
+    
+    pformula = ~age_class_narrow,
+    
+    anc = list(
+      ICU_to_discharge = list(shape = ~age_class_narrow),
+      ICU_to_postICU = list(shape = ~age_class_narrow),
+      ICU_to_death = list(shape = ~age_class_narrow)
+    ),
+    
+    dists = dist_vec,
+    
     data = ICU_modelling,
     
-    dist = "gamma"
-  )
+    method = "direct",
+    optim.control = optim_control_list
+  ), error = function(e) NULL)
+  
+  surv_fit_wide <- tryCatch(flexsurvmix(
+    Surv(LoS, censor_code) ~ 1,
+    event = coding,
+    
+    pformula = ~age_class_wide,
+    
+    anc = list(
+      ICU_to_discharge = list(shape = ~age_class_wide),
+      ICU_to_postICU = list(shape = ~age_class_wide),
+      ICU_to_death = list(shape = ~age_class_wide)
+    ),
+    
+    dists = dist_vec,
+    
+    data = ICU_modelling,
+    
+    method = "direct",
+    optim.control = optim_control_list
+  ), error = function(e) NULL)
   
   list(
     fit_narrow = surv_fit_narrow,

@@ -1,14 +1,14 @@
 
 
 datasets <- list(
-  "omi_mix" = "results/NSW_omi_mix_2022-01-04/los_estimates.csv",
-  "delta" = "results/NSW_delta_2021-11-25/los_estimates.csv",
-  "omi_HNE" = "results/NSW_omi_HNE_2022-01-04/los_estimates.csv"
+  "omi_mix" = "results/NSW_omi_mix_2022-01-11/los_estimates.csv",
+  "delta" = "results/NSW_delta_2021-11-25/los_estimates.csv"#,
+  #"omi_HNE" = "results/NSW_omi_HNE_2022-01-11/los_estimates.csv"
 )
 
 coding_order <- c("onset_to_ward", "ward_to_discharge", "ward_to_ICU", "ward_to_death", 
                   "ICU_to_discharge", "ICU_to_death", "ICU_to_postICU", "postICU_to_discharge", 
-                  "postICU_to_death")
+                  "postICU_to_death") %>% str_replace_all("_", "-")
 
 
 round2 <- function(x) format(round(x, 2), nsmall = 2)
@@ -50,7 +50,10 @@ all_data <- datasets %>%
   mutate(value = if_else(!is.na(bad), "-", value)) %>%
   select(-bad) %>%
   
-  mutate(coding = factor(coding, levels = coding_order))
+  mutate(
+    coding = coding  %>% str_replace_all("_", "-"),
+    coding = factor(coding, levels = coding_order)
+  )
 
 
 # Split 0-69 into two age groups
@@ -64,7 +67,7 @@ all_data_age_split <- all_data  %>%
 
 table_data <- all_data_age_split %>%
   filter(source %in% c("omi_mix", "delta")) %>%
-  mutate(source = factor(source, levels = c("omi_mix", "omi_HNE", "delta"))) %>%
+  mutate(source = factor(source, levels = c("delta", "omi_mix", "omi_HNE"))) %>%
   
   arrange(coding, age_class, source) %>%
   pivot_wider(names_from = c(source, age_class))
@@ -76,7 +79,7 @@ kbl(
   table_data,
   format = "latex",
   booktabs = TRUE,
-  col.names = c("Transition", rep(c("Mixed", "Delta"), times = 3)),
+  col.names = c("Transition", rep(c("Delta", "Mixed"), times = 3)),
   align = c("l", rep("r", times = 6)),
   linesep = ""
 ) %>%

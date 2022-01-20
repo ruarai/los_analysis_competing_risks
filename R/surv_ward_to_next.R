@@ -1,9 +1,7 @@
 
 
 make_surv_ward_to_next <- function(
-  linelist_data,
-  age_table_narrow,
-  age_table_wide
+  linelist_data
 ) {
   require(flexsurv)
 
@@ -31,25 +29,71 @@ make_surv_ward_to_next <- function(
         ),
       LoS = if_else(LoS == 0, 0.01, LoS),
       
-      age_class_narrow = cut_age(age, age_table_narrow),
-      age_class_wide = cut_age(age, age_table_wide)
-    )
-  
-  
-  
-  surv_fit_narrow <- flexsurvreg(
-    Surv(LoS, censor_code) ~ age_class_narrow + coding + shape(age_class_narrow) + shape(coding),
-    data = ward_modelling,
+      age_class_narrow = cut_age(age, get_narrow_age_table()),
+      age_class_wide = cut_age(age, get_wide_age_table())
+    ) %>%
     
-    dist = "gamma"
+    mutate(coding = if_else(coding == "censored", NA_character_, coding)) %>%
+    
+    select(coding, censor_code, LoS, age_class_narrow, age_class_wide)
+  
+  print("Fitting narrow estimates...")
+  
+  
+  dist_vec <- c(ward_to_discharge = "gamma", ward_to_ICU = "gamma", ward_to_death = "gamma")
+  
+  optim_control_list <- list(
+    fnscale = 10000,
+    
+    reltol = 1e-8,
+    
+    maxit = 1000,
+    trace = 3
   )
   
-  surv_fit_wide <- flexsurvreg(
-    Surv(LoS, censor_code) ~ age_class_wide + coding + shape(age_class_wide) + shape(coding),
+  
+  surv_fit_narrow <- flexsurvmix(
+    Surv(LoS, censor_code) ~ 1,
+    event = coding,
+    
+    pformula = ~age_class_narrow,
+    
+    anc = list(
+      ward_to_discharge = list(shape = ~age_class_narrow, rate = ~age_class_narrow),
+      ward_to_ICU = list(shape = ~age_class_narrow, rate = ~age_class_narrow),
+      ward_to_death = list(shape = ~age_class_narrow, rate = ~age_class_narrow)
+    ),
+    
+    dists = dist_vec,
+    
     data = ward_modelling,
     
-    dist = "gamma"
+    method = "direct",
+    optim.control = optim_control_list
   )
+  
+  print("Fitting wide estimates...")
+  surv_fit_wide <- flexsurvmix(
+    Surv(LoS, censor_code) ~ 1,
+    event = coding,
+    
+    pformula = ~age_class_wide,
+
+    anc = list(
+      ward_to_discharge = list(shape = ~age_class_wide, rate = ~age_class_wide),
+      ward_to_ICU = list(shape = ~age_class_wide, rate = ~age_class_wide),
+      ward_to_death = list(shape = ~age_class_wide, rate = ~age_class_wide)
+    ),
+    
+    dists = dist_vec,
+    
+    data = ward_modelling,
+    
+    optim.control = optim_control_list
+  )
+  
+  print("Fitting complete")
+  
   
   list(
     fit_narrow = surv_fit_narrow,
