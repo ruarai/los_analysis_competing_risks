@@ -24,17 +24,20 @@ get_fit_aj <- function(
   aj_fits <- surv_fits %>%
     map_dfr(function(fits_ls) {
       if(!is.null(fits_ls$fit_wide)) {
-        aj_wide <- flexsurv::ajfit_flexsurvmix(
-          fits_ls$fit_wide,
-          
-          B = 50,
-          
-          maxt = 60
-        ) %>%
-          rename(age_class = age_class_wide,
-                 coding = state) %>%
-          mutate(age_type = "wide") %>%
-          fix_result()
+        aj_wide <- tryCatch(
+          flexsurv::ajfit_flexsurvmix(
+            fits_ls$fit_wide,
+            
+            B = 50,
+            
+            maxt = 120
+          ) %>%
+            rename(age_class = age_class_wide,
+                   coding = state) %>%
+            mutate(age_type = "wide") %>%
+            fix_result(),
+          error = function(e) {tibble()}
+        )
         }
       else{
         aj_wide <- tibble()
@@ -46,7 +49,7 @@ get_fit_aj <- function(
           
           B = 50,
           
-          maxt = 60
+          maxt = 120
         ) %>%
           rename(age_class = age_class_narrow,
                  coding = state) %>%
@@ -57,7 +60,23 @@ get_fit_aj <- function(
         aj_narrow <- tibble()
       }
       
-      bind_rows(aj_wide, aj_narrow)
+      if(!is.null(fits_ls$fit_singular)) {
+        aj_singular <- flexsurv::ajfit_flexsurvmix(
+          fits_ls$fit_singular,
+          
+          B = 50,
+          
+          maxt = 120
+        ) %>%
+          rename(coding = state) %>%
+          mutate(age_type = "singular") %>%
+          fix_result()
+      }
+      else{
+        aj_singular <- tibble()
+      }
+      
+      bind_rows(aj_wide, aj_narrow, aj_singular)
     })
   
   aj_fits

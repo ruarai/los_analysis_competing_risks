@@ -4,9 +4,7 @@ make_reporting_plots_2 <- function(
   all_means,
   results_dir
 ) {
-  # all_means <- all_means %>%
-  #   filter(!(subset_name == "omi_HNE" & coding == "onset_to_ward"))
-
+  all_means <- remove_bad_fits(all_means)
   
   
   
@@ -85,10 +83,6 @@ make_reporting_plots_2 <- function(
   
   cowplot::plot_grid(
     cowplot::plot_grid(
-      
-      plot_group("onset_to_ward", "narrow", 10,
-                 "Symptom onset to hospitalisation", "onset-to-ward"),
-      
       plot_group("ward_to_discharge", "narrow", 14,
                  "Ward length of stay (to discharge)", "ward-to-discharge"),
       
@@ -99,7 +93,7 @@ make_reporting_plots_2 <- function(
                  "ICU length of stay", "ICU-to-post-ICU"),
       
       
-      rel_widths = c(30, 30, 30, 23),
+      rel_widths = c(30, 30, 23),
       nrow = 1
     ),
     
@@ -111,7 +105,7 @@ make_reporting_plots_2 <- function(
   ggsave(
     paste0(results_dir, "/means_plot.png"),
     bg = "white",
-    width = 12, height = 4.5
+    width = 9, height = 4.5
   )
   
 }

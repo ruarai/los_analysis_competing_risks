@@ -39,6 +39,8 @@ make_surv_ICU_to_next <- function(
     
     select(coding, censor_code, LoS, age_class_narrow, age_class_wide) %>%
     
+    filter(LoS > 0) %>%
+    
     filter(coding != "unknown")
   
   
@@ -94,9 +96,22 @@ make_surv_ICU_to_next <- function(
     optim.control = optim_control_list
   ), error = function(e) NULL)
   
+  surv_fit_singular <- tryCatch(flexsurvmix(
+    Surv(LoS, censor_code) ~ 1,
+    event = coding,
+    
+    dists = dist_vec,
+    
+    data = ICU_modelling,
+    
+    method = "direct",
+    optim.control = optim_control_list
+  ), error = function(e) NULL)
+  
   list(
     fit_narrow = surv_fit_narrow,
     fit_wide = surv_fit_wide,
+    fit_singular = surv_fit_singular,
     
     data = ICU_modelling
   )

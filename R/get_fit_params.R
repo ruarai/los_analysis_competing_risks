@@ -1,6 +1,5 @@
 
 get_fit_params <- function(
-  trunc_onset_to_ward,
   surv_ward_to_next,
   surv_ICU_to_next,
   surv_postICU_to_next
@@ -67,25 +66,18 @@ get_fit_params <- function(
     surv_postICU_to_next
   )
   
-  bind_rows(
-    trunc_onset_to_ward$fit %>%
-      select(age_class, shape, rate) %>%
-      mutate(age_type = "narrow", coding = "onset_to_ward",
-             prob_trans = 1),
-    
-    surv_fits %>%
-      map_dfr(function(fits_ls) { 
-        bind_rows(
-          get_param_table(
-            fits_ls$fit_wide,
-            age_table_wide$labels
-          ) %>%
-            mutate(age_type = "wide"),
-          get_param_table(
-            fits_ls$fit_narrow,
-            age_table_narrow$labels
-          ) %>%
-            mutate(age_type = "narrow"))
-      })
-  )
+  surv_fits %>%
+    map_dfr(function(fits_ls) { 
+      bind_rows(
+        get_param_table(
+          fits_ls$fit_wide,
+          age_table_wide$labels
+        ) %>%
+          mutate(age_type = "wide"),
+        get_param_table(
+          fits_ls$fit_narrow,
+          age_table_narrow$labels
+        ) %>%
+          mutate(age_type = "narrow"))
+    })
 }

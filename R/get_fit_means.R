@@ -1,6 +1,5 @@
 
 get_fit_means <- function(
-  trunc_onset_to_ward,
   surv_ward_to_next,
   surv_ICU_to_next,
   surv_postICU_to_next
@@ -35,25 +34,56 @@ get_fit_means <- function(
                               TRUE ~ .))
   }
   
-  bind_rows(
-    trunc_onset_to_ward$fit %>%
-      select(age_class, mean, mean_lower, mean_upper) %>%
-      mutate(coding = "onset_to_ward", age_type = "narrow"),
-    surv_fits %>%
-      map_dfr(function(fits_ls) { 
-        bind_rows(
-          get_fit_mean(
-            fits_ls$fit_wide,
-            newdata = tibble(age_class_wide = age_table_wide$labels)
-          ) %>%
-            mutate(age_type = "wide"),
-          get_fit_mean(
-            fits_ls$fit_narrow,
-            newdata = tibble(age_class_narrow = age_table_narrow$labels)
-          ) %>%
-            mutate(age_type = "narrow"))
-      })
+  
+  fit_data <- bind_rows(
+    surv_ward_to_next$data,
+    surv_ICU_to_next$data,
+    surv_postICU_to_next$data,
+  ) %>%
+    drop_na(coding)
+  
+  
+  fit_sample_counts <- bind_rows(
+    fit_data %>%
+      group_by(coding, age_class_wide) %>%
+      summarise(n = n(), .groups = "drop") %>%
+      rename(age_class = age_class_wide) %>%
+      mutate(age_type = "wide"),
+    
+    fit_data %>%
+      group_by(coding, age_class_narrow) %>%
+      summarise(n = n(), .groups = "drop") %>%
+      rename(age_class = age_class_narrow) %>%
+      mutate(age_type = "narrow"),
+    
+    fit_data %>%
+      group_by(coding) %>%
+      summarise(n = n(), .groups = "drop") %>%
+      mutate(age_type = "singular")
   )
+  
+  surv_fits %>%
+    map_dfr(function(fits_ls) { 
+      bind_rows(
+        get_fit_mean(
+          fits_ls$fit_wide,
+          newdata = tibble(age_class_wide = age_table_wide$labels)
+        ) %>%
+          mutate(age_type = "wide"),
+        get_fit_mean(
+          fits_ls$fit_narrow,
+          newdata = tibble(age_class_narrow = age_table_narrow$labels)
+        ) %>%
+          mutate(age_type = "narrow"),
+        
+        get_fit_mean(
+          fits_ls$fit_singular,
+          newdata = NULL
+        ) %>%
+          mutate(age_type = "singular"))
+    }) %>%
+    
+    full_join(fit_sample_counts)
   
 }
               

@@ -3,11 +3,9 @@ make_reporting_plots_1 <- function(
   all_aj,
   results_dir
 ) {
+  require(cowplot)
   
-  all_aj <- all_aj %>%
-    
-    filter(!(coding == "ward_to_ICU" & subset_name == "omi_HNE" & age_class == "0-39"))
-  
+  all_aj <- remove_bad_fits(all_aj)
   
   
   t_breaks <- seq(0, 60, by = 10)
@@ -66,7 +64,7 @@ make_reporting_plots_1 <- function(
     add_sub(
       plot_grid(
         plot_group("ward_to_discharge", "narrow", "0-39", 15, "0-39",
-                   "Probability of being discharged from ward"),
+                   "Probability of discharge from ward following ward admission"),
         plot_group("ward_to_discharge", "narrow", "40-69", 20, "40-69"),
         plot_group("ward_to_discharge", "narrow", "70+", 35, "70+"),
         
@@ -78,7 +76,7 @@ make_reporting_plots_1 <- function(
     add_sub(
       plot_grid(
         plot_group("ward_to_ICU", "narrow", "0-39", 15, "0-39", 
-                   "Probability of being admitted to ICU"),
+                   "Probability of admission to ICU following ward admission"),
         plot_group("ward_to_ICU", "narrow", "40-69", 15, "40-69"),
         plot_group("ward_to_ICU", "narrow", "70+", 15, "70+"),
         
@@ -89,7 +87,7 @@ make_reporting_plots_1 <- function(
     add_sub(
       plot_grid(
         plot_group("ICU_to_postICU", "narrow", "0-39", 40, "0-39", 
-                   "Probability of being discharged to ward from ICU"),
+                   "Probability of admission to ward following ICU admission"),
         plot_group("ICU_to_postICU", "narrow", "40-69", 40, "40-69"),
         plot_group("ICU_to_postICU", "narrow", "70+", 40, "70+"),
         
@@ -109,7 +107,7 @@ make_reporting_plots_1 <- function(
   ggsave(
     paste0(results_dir, "/aj_plots.png"),
     bg = "white",
-    width = 12, height = 11
+    width = 9, height = 8
   )
 }
 

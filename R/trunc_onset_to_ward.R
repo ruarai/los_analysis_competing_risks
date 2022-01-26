@@ -20,7 +20,7 @@ make_trunc_onset_to_ward <- function(linelist_data, date_data_load) {
       coding = "onset_to_ward"
     ) %>%
     
-    filter(LoS <= 31) %>%
+    filter(LoS <= 31, LoS > 0) %>%
     
     mutate(date_admission = as_date(dt_hosp_admission)) %>%
     

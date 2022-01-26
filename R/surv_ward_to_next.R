@@ -33,7 +33,10 @@ make_surv_ward_to_next <- function(
       age_class_wide = cut_age(age, get_wide_age_table())
     ) %>%
     
-    mutate(coding = if_else(coding == "censored", NA_character_, coding)) %>%
+    mutate(coding = if_else(coding == "censored", NA_character_, coding),
+           coding = factor(coding, levels = c("ward_to_death", "ward_to_discharge", "ward_to_ICU"))) %>%
+    
+    filter(LoS > 0) %>%
     
     select(coding, censor_code, LoS, age_class_narrow, age_class_wide)
   
@@ -95,9 +98,59 @@ make_surv_ward_to_next <- function(
   print("Fitting complete")
   
   
+  ## Perform a funky two-step estimation process to try and get sensible ward-to-death
+  ## length of stay estimations. Normally, ward_to_death would be drastically over-estimated
+  ## since it seems that the likelihood of high length of stay and high probability of death
+  ## is /slightly/ greater than the likelihood of medium length of stay and low probability
+  ## of death
+  
+  ## We use Aalen-Johansen non-parametric estimates of transition probabilities
+  ## (which are produced from the first surv_fit_singular object, with the actual
+  ## gamma dist. fit being discarded). We then take that non-parametric pr_ward_to_death
+  ## and use it as a fixed parameter in the next fitting process, such that resultant length of
+  ## stay is somewhat more reasonable
+  
+  surv_fit_singular <- tryCatch(flexsurvmix(
+    Surv(LoS, censor_code) ~ 1,
+    event = coding,
+    
+    dists = dist_vec,
+    
+    data = ward_modelling,
+    
+    method = "direct",
+    optim.control = optim_control_list
+  ), error = function(e) NULL)
+  
+  surv_fit_singular_fixed_pr <- tryCatch({
+    fixed_pr_ward_to_death <- ajfit_flexsurvmix(surv_fit_singular) %>%
+      filter(state == "ward_to_death",
+             model == "Aalen-Johansen") %>%
+      pull(val) %>%
+      max()
+    
+    flexsurvmix(
+      Surv(LoS, censor_code) ~ 1,
+      event = coding,
+      
+      dists = dist_vec,
+      
+      data = ward_modelling,
+      
+      fixedpars = c(1),
+      initp = c(fixed_pr_ward_to_death, (1 - fixed_pr_ward_to_death) * 0.8, (1 - fixed_pr_ward_to_death) * 0.2),
+      
+      method = "direct",
+      optim.control = optim_control_list
+      
+    )}, error = function(e) NULL)
+  
+  
+  
   list(
     fit_narrow = surv_fit_narrow,
     fit_wide = surv_fit_wide,
+    fit_singular = surv_fit_singular_fixed_pr,
     
     data = ward_modelling
   )

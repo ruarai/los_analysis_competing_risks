@@ -27,11 +27,14 @@ make_surv_postICU_to_next <- function(
       age_class_wide = cut_age(age, get_wide_age_table())
     ) %>%
     
+    filter(LoS > 0) %>%
+    
     mutate(
       coding = code_postICU_compartment(is_still_in_hosp, patient_died),
       censor_code = if_else(coding == "censored", 0, 1)) %>%
     
-    mutate(coding = if_else(coding == "censored", NA_character_, coding)) %>%
+    mutate(coding = if_else(coding == "censored", NA_character_, coding),
+           coding = factor(coding, levels = c("postICU_to_death", "postICU_to_discharge"))) %>%
     
     select(coding, censor_code, LoS, age_class_narrow, age_class_wide)
   
@@ -86,9 +89,49 @@ make_surv_postICU_to_next <- function(
     optim.control = optim_control_list
   ), error = function(e) NULL)
   
+  
+  
+  surv_fit_singular <- tryCatch(flexsurvmix(
+    Surv(LoS, censor_code) ~ 1,
+    event = coding,
+    
+    dists = dist_vec,
+    
+    data = postICU_modelling,
+    
+    method = "direct",
+    optim.control = optim_control_list
+  ), error = function(e) NULL)
+  
+  # Strange hack (see surv_ward_to_next)
+  surv_fit_singular_fixed_pr <- tryCatch({
+    fixed_pr_postICU_to_death <- ajfit_flexsurvmix(surv_fit_singular) %>%
+      filter(state == "postICU_to_death",
+             model == "Aalen-Johansen") %>%
+      pull(val) %>%
+      max()
+    
+    flexsurvmix(
+    Surv(LoS, censor_code) ~ 1,
+    event = coding,
+    
+    dists = dist_vec,
+    
+    data = postICU_modelling,
+    
+    fixedpars = c(1),
+    initp = c(fixed_pr_postICU_to_death, 1 - fixed_pr_postICU_to_death),
+    
+    method = "direct",
+    optim.control = optim_control_list
+    
+  )}, error = function(e) NULL)
+  
+  
   list(
     fit_narrow = surv_fit_narrow,
     fit_wide = surv_fit_wide,
+    fit_singular = surv_fit_singular_fixed_pr,
     
     data = postICU_modelling
   )
