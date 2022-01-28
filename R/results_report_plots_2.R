@@ -11,7 +11,7 @@ make_reporting_plots_2 <- function(
   plot_group <- function(
     i_coding, i_age_type, y_max,
     
-    i_title, i_subtitle = NULL,
+    i_title, i_subtitle = NULL, x_lab = "",
     
     legend_only = FALSE
   ) {
@@ -58,7 +58,7 @@ make_reporting_plots_2 <- function(
       
       coord_cartesian(ylim = c(0, y_max)) +
       
-      xlab("Age group") + ylab("Mean (days)") +
+      xlab(x_lab) + ylab("Mean (days)") +
       
       ggtitle(i_title, i_subtitle) +
       
@@ -76,6 +76,7 @@ make_reporting_plots_2 <- function(
     }
     
   }
+  
   p_legend <- plot_group("ward_to_discharge", "narrow", 14,
              "Mean time to discharge from ward",
              
@@ -86,14 +87,14 @@ make_reporting_plots_2 <- function(
       plot_group("ward_to_discharge", "narrow", 14,
                  "Ward length of stay (to discharge)", "ward-to-discharge"),
       
-      plot_group("ward_to_ICU", "narrow", 4,
+      plot_group("ward_to_ICU", "narrow", 4, x_lab = "Age group",
                  "Ward length of stay (to ICU)", "ward-to-ICU"),
       
-      plot_group("ICU_to_postICU", "wide", 14,
+      plot_group("ICU_to_postICU", "narrow", 14,
                  "ICU length of stay", "ICU-to-post-ICU"),
       
       
-      rel_widths = c(30, 30, 23),
+      rel_widths = c(30, 30, 30),
       nrow = 1
     ),
     
@@ -105,7 +106,7 @@ make_reporting_plots_2 <- function(
   ggsave(
     paste0(results_dir, "/means_plot.png"),
     bg = "white",
-    width = 9, height = 4.5
+    width = 9, height = 4.3
   )
   
 }

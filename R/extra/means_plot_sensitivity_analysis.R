@@ -116,3 +116,13 @@ cowplot::plot_grid(
   rel_heights = c(10, 1),
   ncol = 1
 )
+
+results_dir <- tar_read(results_dir)
+
+
+ggsave(
+  paste0(results_dir, "/sens_means.png"),
+  bg = "white",
+  width = 9,
+  height = 7
+)

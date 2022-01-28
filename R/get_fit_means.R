@@ -31,7 +31,27 @@ get_fit_means <- function(
                               . == "lower" ~ "mean_lower",
                               . == "upper" ~ "mean_upper",
                               . == "event" ~ "coding",
-                              TRUE ~ .))
+                              TRUE ~ .)) %>%
+      
+      left_join(
+        flexsurv::quantile_flexsurvmix(
+          surv_fit,
+          newdata = newdata,
+          B  = 50,
+          probs = 0.9
+        ) %>%
+          as_tibble() %>%
+          select(-p) %>%
+          rename_with(~ case_when(. == "age_class_wide" ~ "age_class",
+                                  . == "age_class_narrow" ~ "age_class",
+                                  . == "val" ~ "q90",
+                                  . == "lower" ~ "q90_lower",
+                                  . == "upper" ~ "q90_upper",
+                                  . == "event" ~ "coding",
+                                  TRUE ~ .))
+      )
+    
+    
   }
   
   

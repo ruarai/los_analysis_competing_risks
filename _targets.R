@@ -45,7 +45,7 @@ source("R/clinical_burden.R")
 pre_subsets <- list(
   tar_target(NSW_LHD_filter, NULL),
   
-  tar_target(results_name_prefix, "NSW_2022-01-25_test_delta"),
+  tar_target(results_name_prefix, "NSW_2022-01-25"),
   tar_target(linelist_path,"~/data_private/NSW/NSW_out_episode_2022_01_25.xlsx"),
   
   
@@ -222,28 +222,28 @@ list(
       dir <- paste0("results/", results_name_prefix, "_all", "/")
       dir.create(dir, showWarnings = FALSE)
       return(dir)
-    })#,
+    }),
   
-  # tar_target(
-  #   reporting_plots_1,
-  #   make_reporting_plots_1(all_aj, results_dir)
-  # ),
-  # 
-  # tar_target(
-  #   reporting_plots_2,
-  #   make_reporting_plots_2(all_means, results_dir)
-  # ),
-  # 
-  # tar_target(
-  #   reporting_summary_mean_tbl,
-  #   make_summary_mean_tbl(all_means, results_dir)
-  # ),
-  # 
-  # tar_target(
-  #   reporting_burden,
-  #   
-  #   make_burden_figure(linelist_raw, date_data_load, ymd("2021-12-15"), results_dir)
-  # )
+  tar_target(
+    reporting_plots_1,
+    make_reporting_plots_1(all_aj, results_dir)
+  ),
+
+  tar_target(
+    reporting_plots_2,
+    make_reporting_plots_2(all_means, results_dir)
+  ),
+
+  tar_target(
+    reporting_summary_mean_tbl,
+    make_summary_mean_tbl(all_means, results_dir)
+  ),
+
+  tar_target(
+    reporting_burden,
+
+    make_burden_figure(linelist_raw, date_data_load, ymd("2021-12-15"), results_dir)
+  )
 )
 
 

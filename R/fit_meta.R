@@ -52,28 +52,28 @@ remove_bad_fits <- . %>%
 
 
 
-# data_subsets <- tibble::tribble(
-#   ~subset_name, ~date_start, ~date_end, ~LHD_filter,
-#   "omi_mix", "2021-12-15", NA_character_, NA_character_,
-#   
-#   "omi_HNE", "2021-12-15", NA_character_, "Hunter New England LHD",
-#   
-#   "delta", "2021-07-01", "2021-12-15", NA_character_
-# )
-
 data_subsets <- tibble::tribble(
   ~subset_name, ~date_start, ~date_end, ~LHD_filter, ~do_remove_adm_delay, ~do_remove_episodes_sep,
-  "om_filt_both", "2021-12-15", NA_character_, NA_character_, TRUE, TRUE,
-  "om_filt_delay", "2021-12-15", NA_character_, NA_character_, TRUE, FALSE,
-  "om_filt_eps", "2021-12-15", NA_character_, NA_character_, FALSE, TRUE,
-  "om_filt_none", "2021-12-15", NA_character_, NA_character_, FALSE, FALSE,
-  "d_filt_both", "2021-07-01", "2021-12-15", NA_character_, TRUE, TRUE,
-  "d_filt_delay", "2021-07-01", "2021-12-15", NA_character_, TRUE, FALSE,
-  "d_filt_eps", "2021-07-01", "2021-12-15", NA_character_, FALSE, TRUE,
-  "d_filt_none", "2021-07-01", "2021-12-15", NA_character_, FALSE, FALSE,
-  "h_filt_both", "2021-12-15", NA_character_, "Hunter New England LHD", TRUE, TRUE,
-  "h_filt_delay", "2021-12-15", NA_character_, "Hunter New England LHD", TRUE, FALSE,
-  "h_filt_eps", "2021-12-15", NA_character_, "Hunter New England LHD", FALSE, TRUE,
-  "h_filt_none", "2021-12-15", NA_character_, "Hunter New England LHD", FALSE, FALSE,
+  "omi_mix", "2021-12-15", NA_character_, NA_character_, TRUE, TRUE,
+
+  "omi_HNE", "2021-12-15", NA_character_, "Hunter New England LHD", TRUE, TRUE,
+
+  "delta", "2021-07-01", "2021-12-15", NA_character_, TRUE, TRUE,
 )
+
+# data_subsets <- tibble::tribble(
+#   ~subset_name, ~date_start, ~date_end, ~LHD_filter, ~do_remove_adm_delay, ~do_remove_episodes_sep,
+#   "om_filt_both", "2021-12-15", NA_character_, NA_character_, TRUE, TRUE,
+#   "om_filt_delay", "2021-12-15", NA_character_, NA_character_, TRUE, FALSE,
+#   "om_filt_eps", "2021-12-15", NA_character_, NA_character_, FALSE, TRUE,
+#   "om_filt_none", "2021-12-15", NA_character_, NA_character_, FALSE, FALSE,
+#   "d_filt_both", "2021-07-01", "2021-12-15", NA_character_, TRUE, TRUE,
+#   "d_filt_delay", "2021-07-01", "2021-12-15", NA_character_, TRUE, FALSE,
+#   "d_filt_eps", "2021-07-01", "2021-12-15", NA_character_, FALSE, TRUE,
+#   "d_filt_none", "2021-07-01", "2021-12-15", NA_character_, FALSE, FALSE,
+#   "h_filt_both", "2021-12-15", NA_character_, "Hunter New England LHD", TRUE, TRUE,
+#   "h_filt_delay", "2021-12-15", NA_character_, "Hunter New England LHD", TRUE, FALSE,
+#   "h_filt_eps", "2021-12-15", NA_character_, "Hunter New England LHD", FALSE, TRUE,
+#   "h_filt_none", "2021-12-15", NA_character_, "Hunter New England LHD", FALSE, FALSE,
+# )
 
