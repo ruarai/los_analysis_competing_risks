@@ -46,7 +46,7 @@ make_trunc_onset_to_ward <- function(linelist_data, date_data_load) {
     ests <- exp(MLE$par) %>%
       `names<-`(c("shape", "rate"))
     
-    rate_confint <- sizeSpectra::profLike(
+    rate_confint <- tryCatch(sizeSpectra::profLike(
       neg_ll_gamma,
       MLE = ests["rate"],
       minNegLL = MLE$value,
@@ -54,9 +54,9 @@ make_trunc_onset_to_ward <- function(linelist_data, date_data_load) {
       vecDiff = 0.1,
       h_nr_tibble = h_nr_tibble,
       fixed_shape = ests["shape"]
-    )
+    ), error = function(e) { NA })
     
-    shape_confint <- sizeSpectra::profLike(
+    shape_confint <- tryCatch(sizeSpectra::profLike(
       neg_ll_gamma,
       MLE = ests["shape"],
       minNegLL = MLE$value,
@@ -64,7 +64,7 @@ make_trunc_onset_to_ward <- function(linelist_data, date_data_load) {
       vecDiff = 0.2,
       h_nr_tibble = h_nr_tibble,
       fixed_rate = ests["rate"]
-    )
+    ), error = function(e) { NA })
     
     tibble(
       age_class = i_age_class,

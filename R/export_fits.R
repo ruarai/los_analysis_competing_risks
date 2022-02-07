@@ -9,7 +9,8 @@ export_fits <- function(
       age_class == "0-39" ~ list(c("0-9", "10-19", "20-29", "30-39")),
       age_class == "40-69" ~ list(c("40-49", "50-59", "60-69")),
       age_class == "70+" ~ list(c("70-79", "80+")),
-      age_class == "0-69" ~ list(c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69"))
+      age_class == "0-69" ~ list(c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69")),
+      age_class == "all" ~ list(c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+")),
     )
   }
   
@@ -67,10 +68,16 @@ export_fits <- function(
     rename(age_group = age_class)
   
   export_file <- paste0(results_dir, "/clinical_parameters.csv")
+  export_file_share <- paste0(results_dir, "/clinical_parameters_share.csv")
   
   fit_export %>%
     select(any_of(consistent_col_names)) %>% 
     write_csv(export_file)
+  
+  fit_export %>%
+    select(any_of(consistent_col_names)) %>% 
+    select(-c(scale_onset_to_ward, shape_onset_to_ward)) %>%
+    write_csv(export_file_share)
   
   return(export_file)
 }

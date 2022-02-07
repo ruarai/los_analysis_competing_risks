@@ -34,6 +34,7 @@ source("R/get_fit_means.R")
 source("R/get_fit_total_los.R")
 
 source("R/export_fits.R")
+source("R/extra/make_estimate_samples.R")
 
 source("R/results_report_plots.R")
 source("R/results_report_plots_2.R")
@@ -121,6 +122,14 @@ for_each_subset <- tar_map(
   ),
   
   tar_target(
+    trunc_onset_to_ward,
+    make_trunc_onset_to_ward(
+      linelist_data,
+      date_data_load
+    )
+  ),
+  
+  tar_target(
     surv_ward_to_next,
     make_surv_ward_to_next(
       linelist_data
@@ -155,6 +164,7 @@ for_each_subset <- tar_map(
   tar_target(
     fit_params,
     get_fit_params(
+      trunc_onset_to_ward,
       surv_ward_to_next,
       surv_ICU_to_next,
       surv_postICU_to_next
@@ -188,6 +198,18 @@ for_each_subset <- tar_map(
       results_dir
     ),
     format = "file"
+  ),
+  
+  tar_target(
+    fit_samples_export,
+    
+    export_fit_samples(
+      surv_ward_to_next,
+      surv_ICU_to_next,
+      surv_postICU_to_next,
+      
+      results_dir
+    )
   )
 )
 

@@ -132,7 +132,7 @@ make_burden_figure <- function(
     
     ncol = 1,
     align = 'v',
-    rel_heights = c(0.85,0.95),
+    rel_heights = c(0.95,0.92),
     axis = 'lrtb'
   )
   
