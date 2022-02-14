@@ -1,5 +1,6 @@
 require(cowplot)
 source("R/fit_meta.R")
+source("R/common.R")
 aj_fits <- tar_read(all_aj) %>%
   remove_bad_fits()
 
