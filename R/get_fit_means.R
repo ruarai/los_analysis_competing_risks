@@ -66,19 +66,19 @@ get_fit_means <- function(
   fit_sample_counts <- bind_rows(
     fit_data %>%
       group_by(coding, age_class_wide) %>%
-      summarise(n = n(), .groups = "drop") %>%
+      summarise(n = n(), n_cens = sum(is.na(coding)), .groups = "drop") %>%
       rename(age_class = age_class_wide) %>%
       mutate(age_type = "wide"),
     
     fit_data %>%
       group_by(coding, age_class_narrow) %>%
-      summarise(n = n(), .groups = "drop") %>%
+      summarise(n = n(), n_cens = sum(is.na(coding)), .groups = "drop") %>%
       rename(age_class = age_class_narrow) %>%
       mutate(age_type = "narrow"),
     
     fit_data %>%
       group_by(coding) %>%
-      summarise(n = n(), .groups = "drop") %>%
+      summarise(n = n(), n_cens = sum(is.na(coding)), .groups = "drop") %>%
       mutate(age_type = "singular")
   )
   
