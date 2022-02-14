@@ -151,6 +151,7 @@ export_fit_samples <- function(
            name = if_else(name == "prob", "pr", name)) %>%
     unnest(age_class) %>%
     pivot_wider(names_from = c(name, coding)) %>%
+    rename(age_group = age_class) %>%
     select(any_of(consistent_col_names)) %>%
     write_csv(paste0(results_dir, "/estimate_samples_share_wide.csv"))
   
@@ -190,7 +191,6 @@ export_fit_samples <- function(
     
     left_join(
       all_means %>% 
-        filter(subset_name == "om_filt_both") %>%
         mutate(age_class = replace_na(age_class, "all")) %>%
         select(coding, age_class, n) %>%
         group_by(coding, age_class) %>%
