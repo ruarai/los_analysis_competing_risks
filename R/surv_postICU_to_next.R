@@ -17,7 +17,16 @@ make_surv_postICU_to_next <- function(
     mutate(
       LoS = time_diff_to_days(dt_hosp_discharge - dt_last_icu),
       
-      received_postICU_care = LoS > 0.01) %>%
+      # Only include people with post-ICU stay as defined above (ignoring intra-ICU stays that are calculated below)
+      received_postICU_care = LoS > 0.01,
+      
+      # Calculate total LoS of any ward stays that occurred within the ICU duration
+      ICU_LoS = time_diff_to_days(dt_last_icu - dt_first_icu),
+      true_ICU_LoS = true_icu_hours / 24,
+      intra_ICU_ward_LoS = pmax(ICU_LoS - true_ICU_LoS, 0),
+      
+      # Add that ward stay duration to this post-ICU stay
+      LoS = LoS + intra_ICU_ward_LoS) %>%
     
     filter(received_postICU_care) %>%
     

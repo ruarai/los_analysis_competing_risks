@@ -19,7 +19,8 @@ make_surv_ICU_to_next <- function(
   ICU_modelling <- linelist_data %>%
     filter(ever_in_icu) %>%
     mutate(
-      LoS = time_diff_to_days(dt_last_icu - dt_first_icu),
+      LoS = true_icu_hours / 24,
+      LoS_naive = time_diff_to_days(dt_last_icu - dt_first_icu),
       
       received_postICU_care = time_diff_to_days(dt_hosp_discharge - dt_last_icu) > 0.01,
            
@@ -32,16 +33,17 @@ make_surv_ICU_to_next <- function(
       age_class_wide = cut_age(age, get_wide_age_table())) %>%
     
     mutate(
-      LoS = if_else(LoS == 0, 0.01, LoS)
+      LoS = if_else(LoS == 0, 0.01, LoS),
+      
     ) %>%
+    
+    filter(coding != "unknown") %>%
     
     mutate(coding = if_else(coding == "censored", NA_character_, coding)) %>%
     
     select(coding, censor_code, LoS, age_class_narrow, age_class_wide) %>%
     
-    filter(LoS > 0) %>%
-    
-    filter(coding != "unknown")
+    filter(LoS > 0)
   
   
   dist_vec <- c(ICU_to_discharge = "gamma", ICU_to_postICU = "gamma", ICU_to_death = "gamma")
@@ -51,7 +53,7 @@ make_surv_ICU_to_next <- function(
     
     reltol = 1e-9,
     
-    maxit = 100,
+    maxit = 500,
     trace = 3
   )
   
