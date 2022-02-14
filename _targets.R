@@ -46,8 +46,8 @@ source("R/clinical_burden.R")
 pre_subsets <- list(
   tar_target(NSW_LHD_filter, NULL),
   
-  tar_target(results_name_prefix, "NSW_2022-01-25"),
-  tar_target(linelist_path,"~/data_private/NSW/NSW_out_episode_2022_01_25.xlsx"),
+  tar_target(results_name_prefix, "NSW_2022-02-08"),
+  tar_target(linelist_path,"~/data_private/NSW/NSW_out_episode_2022_02_08.xlsx"),
   
   
   
