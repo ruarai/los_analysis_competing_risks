@@ -4,6 +4,8 @@ export_fit_samples <- function(
   surv_ICU_to_next,
   surv_postICU_to_next,
   
+  fit_means,
+  
   results_dir
 ) {
   
@@ -155,14 +157,14 @@ export_fit_samples <- function(
     select(any_of(consistent_col_names)) %>%
     write_csv(paste0(results_dir, "/estimate_samples_share_wide.csv"))
   
+  hide_probs <- c("ward_to_death", "postICU_to_death")
   
-  all_means <- tar_read(all_means)
+  
   round2 <- function(x) if_else(is.na(x), NA_character_, format(round(x, 2), nsmall = 2))
   
   tbl_data <- left_join(
     
     samples %>% 
-      filter(name != "prob") %>%
       group_by(age_class, coding, name) %>% 
       summarise(mean = mean(value),
                 u95 = exp(quantile(log(value), p = 0.975)),
@@ -176,7 +178,8 @@ export_fit_samples <- function(
       
       select(coding, age_class,
              scale_mean, scale_l95, scale_u95,
-             shape_mean, shape_l95, shape_u95),
+             shape_mean, shape_l95, shape_u95,
+             prob_mean, prob_l95, prob_u95),
     
     
     
@@ -190,7 +193,7 @@ export_fit_samples <- function(
   ) %>%
     
     left_join(
-      all_means %>% 
+      fit_means %>% 
         mutate(age_class = replace_na(age_class, "all")) %>%
         select(coding, age_class, n) %>%
         group_by(coding, age_class) %>%
@@ -199,11 +202,11 @@ export_fit_samples <- function(
     mutate(coding = factor(coding, levels = fit_meta$i_comp)) %>%
     
     mutate(across(
-      c(scale_mean, scale_l95, scale_u95, shape_mean, shape_l95, shape_u95, corr),
+      c(scale_mean, scale_l95, scale_u95, shape_mean, shape_l95, shape_u95, corr, prob_mean, prob_l95, prob_u95),
       round2
     )) %>%
     
-    relocate(coding, age_class, n) %>%
+    select(coding, age_class, n, scale_mean, scale_l95, scale_u95, shape_mean, shape_l95, shape_u95, corr, prob_mean, prob_l95, prob_u95) %>%
     
     arrange(coding, age_class)
   
@@ -212,8 +215,8 @@ export_fit_samples <- function(
   
   kbl(
     tbl_data,
-    col.names = rep("", times = 10),
-    align = c("l", "l", rep("r", times = 8)),
+    col.names = rep("", times = 13),
+    align = c("l", "l", rep("r", times = 11)),
     format = "latex",
     booktabs = TRUE,
     linesep = ""
@@ -221,7 +224,7 @@ export_fit_samples <- function(
     collapse_rows(1)  %>%
     
     add_header_above(c("Pathway" = 1, "Age group" = 1, "n" = 1,
-                       "Scale" = 3, "Shape" = 3, "Cor." = 1),
+                       "Scale" = 3, "Shape" = 3, "Cor." = 1, "Probability" = 3),
                      align = "l") %>%
     
     write_file(paste0(results_dir, "/tbl_full_params.tex"))

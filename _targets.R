@@ -208,6 +208,8 @@ for_each_subset <- tar_map(
       surv_ICU_to_next,
       surv_postICU_to_next,
       
+      fit_means,
+      
       results_dir
     )
   )
