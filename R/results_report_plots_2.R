@@ -49,10 +49,12 @@ make_reporting_plots_2 <- function(
                  position = position_dodge(width = 0.25),
                  
                  size = 4, stroke = 2) +
-      
+
       scale_color_manual(values = est_cols,
                          labels = est_labels,
                          name = "") +
+      
+      #scale_color_discrete() +
       
       scale_y_continuous(breaks = scales::breaks_extended(10)) +
       

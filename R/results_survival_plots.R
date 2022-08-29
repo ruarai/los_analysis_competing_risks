@@ -44,10 +44,10 @@ fit_plots <- fit_meta %>%
       optional_facet +
       
       coord_cartesian(xlim = c(0, max_t_by_coding[i_comp])) +
-      
-      scale_fill_manual(values = est_cols, labels = est_labels, name = "") +
-      scale_color_manual(values = est_cols, labels = est_labels, name = "") +
-      
+      # 
+      # scale_fill_manual(values = est_cols, labels = est_labels, name = "") +
+      # scale_color_manual(values = est_cols, labels = est_labels, name = "") +
+      # 
       scale_x_continuous(breaks = t_breaks, minor_breaks = t_breaks_minor) +
       
       xlab(NULL) + ylab(NULL) +
@@ -56,7 +56,7 @@ fit_plots <- fit_meta %>%
       
       
       theme_minimal() +
-      theme(legend.position = "none",
+      theme(legend.position = "bottom",
             plot.subtitle = element_text(face = "italic"))
     
   })
@@ -81,6 +81,11 @@ plot_legend <- (ggplot(tibble(b = 1:2,
                   theme_minimal() +
                   theme(legend.position = 'bottom')) %>%
   cowplot::get_legend()
+
+cowplot::plot_grid(
+  plotlist = fit_plots[1:4],
+  ncol = 1
+)
 
 plot_grid(
   cowplot::plot_grid(

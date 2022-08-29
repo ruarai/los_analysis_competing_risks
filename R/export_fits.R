@@ -76,7 +76,6 @@ export_fits <- function(
   
   fit_export %>%
     select(any_of(consistent_col_names)) %>% 
-    select(-c(scale_onset_to_ward, shape_onset_to_ward)) %>%
     write_csv(export_file_share)
   
   return(export_file)
