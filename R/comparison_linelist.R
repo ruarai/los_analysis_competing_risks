@@ -16,13 +16,10 @@ names_nice <- c(
 
 ll_filt_tbl <- ll_files %>%
   map_dfr(read_csv, show_col_types = FALSE, .id = "source") %>%
-  
   pivot_wider(names_from = "source") %>%
-  
   filter(
     name %in% names(names_nice)
   ) %>%
-  
   mutate(name = names_nice[name])
 
 

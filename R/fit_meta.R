@@ -1,9 +1,9 @@
 
 fit_meta <- tibble::tribble(
-  ~ i_comp, ~ i_age_type,
-  "onset_to_ward", "narrow", 
+  ~i_comp, ~i_age_type,
+  "onset_to_ward", "narrow",
   "ward_to_discharge", "narrow",
-  "ward_to_ICU", "narrow", 
+  "ward_to_ICU", "narrow",
   "ward_to_death", "singular",
   "ICU_to_discharge", "narrow",
   "ICU_to_death", "wide",
@@ -37,7 +37,7 @@ max_t_by_coding <- c(
 )
 
 bad_fits <- tibble::tribble(
-  ~coding, ~age_class, ~subset_name, 
+  ~coding, ~age_class, ~subset_name,
   "ward_to_ICU", "0-39", "omi_HNE",
   "ICU_to_death", "0-69", "omi_HNE",
   "ICU_to_death", "70+", "omi_HNE",
@@ -47,7 +47,7 @@ bad_fits <- tibble::tribble(
 
 remove_bad_fits <- . %>%
   left_join(bad_fits) %>%
-  filter(is.na(bad_fit)) %>% 
+  filter(is.na(bad_fit)) %>%
   select(-bad_fit)
 
 
@@ -66,4 +66,3 @@ remove_bad_fits <- . %>%
 #   "h_filt_eps", "2021-12-15", NA_character_, "Hunter New England LHD", FALSE, TRUE,
 #   "h_filt_none", "2021-12-15", NA_character_, "Hunter New England LHD", FALSE, FALSE,
 # )
-

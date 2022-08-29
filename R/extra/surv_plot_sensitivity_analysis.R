@@ -2,17 +2,17 @@ require(cowplot)
 source("R/fit_meta.R")
 aj_fits <- tar_read(all_aj) %>%
   remove_bad_fits() %>%
-  
-  mutate(period = str_sub(subset_name, end = 1),
-         
-         subset_name = str_remove(subset_name, "h_"),
-         subset_name = str_remove(subset_name, "d_"),
-         subset_name = str_remove(subset_name, "om_")) %>%
-  
-  mutate(period = case_when(period == "h" ~ "Omicron (HNE)",
-                            period == "d" ~ "Delta",
-                            period == "o" ~ "Omicron-Delta")) %>%
-  
+  mutate(
+    period = str_sub(subset_name, end = 1),
+    subset_name = str_remove(subset_name, "h_"),
+    subset_name = str_remove(subset_name, "d_"),
+    subset_name = str_remove(subset_name, "om_")
+  ) %>%
+  mutate(period = case_when(
+    period == "h" ~ "Omicron (HNE)",
+    period == "d" ~ "Delta",
+    period == "o" ~ "Omicron-Delta"
+  )) %>%
   filter(subset_name == "filt_both" | subset_name == "filt_none")
 
 
@@ -46,41 +46,35 @@ fit_plots <- fit_meta %>%
     i_filt <- . %>%
       filter(coding == i_comp, age_type == i_age_type) %>%
       mutate(age_class = factor(age_class, levels = c("0-39", "40-69", "0-69", "70+")))
-    
-    
-    
+
+
+
     ggplot() +
       geom_line(aes(x = time, y = val, color = subset_name),
-                aj_fits %>% i_filt %>% filter(model == "parametric"),
-                linetype = 'dashed') +
-      
+        aj_fits %>% i_filt() %>% filter(model == "parametric"),
+        linetype = "dashed"
+      ) +
       geom_ribbon(aes(x = time, ymin = lower, ymax = upper, fill = subset_name),
-                  aj_fits %>% i_filt %>% filter(model == "parametric"),
-                  
-                  alpha = 0.25) +
-      
-      geom_step(aes(x = time, y = val, color = subset_name),
-                aj_fits %>% i_filt %>% filter(model == "non-parametric")) +
-      
-      facet_wrap(~period * age_class) +
-      
+        aj_fits %>% i_filt() %>% filter(model == "parametric"),
+        alpha = 0.25
+      ) +
+      geom_step(
+        aes(x = time, y = val, color = subset_name),
+        aj_fits %>% i_filt() %>% filter(model == "non-parametric")
+      ) +
+      facet_wrap(~ period * age_class) +
       coord_cartesian(xlim = c(0, max_t_by_coding[i_comp])) +
-      
       scale_x_continuous(breaks = t_breaks, minor_breaks = t_breaks_minor) +
-      
       ggokabeito::scale_color_okabe_ito(labels = plot_labels, name = "", order = 5:9) +
-      
       ggokabeito::scale_fill_okabe_ito(labels = plot_labels, name = "", order = 5:9) +
-      
-      xlab(NULL) + ylab(NULL) +
-      
+      xlab(NULL) +
+      ylab(NULL) +
       ggtitle(NULL, pretty_coding_name[i_comp]) +
-      
-      
       theme_minimal() +
-      theme(legend.position = "bottom",
-            plot.subtitle = element_text(face = "italic"))
-    
+      theme(
+        legend.position = "bottom",
+        plot.subtitle = element_text(face = "italic")
+      )
   })
 
 

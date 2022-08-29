@@ -1,5 +1,7 @@
 
-time_diff_to_days <- function(time_diff){ as.numeric(time_diff / ddays(1)) }
+time_diff_to_days <- function(time_diff) {
+  as.numeric(time_diff / ddays(1))
+}
 
 
 get_narrow_age_table <- function() {
