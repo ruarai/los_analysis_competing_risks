@@ -219,22 +219,22 @@ list(
     all_total_los,
     for_each_subset[["fit_total_los"]],
     command = dplyr::bind_rows(!!!.x)
-  )
+  ),
 
-  # tar_target(
-  #   reporting_plots_1,
-  #   make_reporting_plots_1(all_aj, results_dir)
-  # ),
-  #
-  # tar_target(
-  #   reporting_plots_2,
-  #   make_reporting_plots_2(all_means, results_dir)
-  # ),
-  #
-  # tar_target(
-  #   reporting_summary_mean_tbl,
-  #   make_summary_mean_tbl(all_means, results_dir)
-  # ),
+  tar_target(
+    reporting_plots_1,
+    make_reporting_plots_1(all_aj, results_dir)
+  ),
+
+  tar_target(
+    reporting_plots_2,
+    make_reporting_plots_2(all_means, results_dir)
+  ),
+
+  tar_target(
+    reporting_summary_mean_tbl,
+    make_summary_mean_tbl(all_means, results_dir)
+  )
 
   # tar_target(
   #   reporting_burden,

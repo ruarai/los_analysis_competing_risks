@@ -65,6 +65,7 @@ make_summary_mean_tbl <- function(all_means,
     ) %>%
     select(coding, subset_name, age_class, n, mean, mean_lower, mean_upper, q90, q90_lower, q90_upper) %>%
     mutate(
+      n = as.character(n),
       n = replace_na(n, "-"),
       mean_lower = if_else(is.na(mean), "", mean_lower),
       mean_upper = if_else(is.na(mean), "", mean_upper),

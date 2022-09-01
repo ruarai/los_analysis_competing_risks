@@ -1,8 +1,5 @@
 
-make_burden_figure <- function(linelist_raw,
-                               date_data_load,
-                               date_variant_cutoff,
-                               results_dir) {
+make_burden_figure <- function(results_dir) {
   ward_occupancy <- read_csv("~/data_private/NSW_occupancy/Ward_2022-04-26_UNSW.csv") %>%
     select(
       date = DATE, date_snapshot = SNAPSHOT_DATE,
@@ -75,6 +72,7 @@ make_burden_figure <- function(linelist_raw,
     mutate(age_group = factor(age_group, levels = c("70+", "40-69", "0-39"))) %>%
     filter(date <= ymd("2022-02-07"))
 
+  date_variant_cutoff <- ymd("2021-12-15")
 
   plots_common <- list(
     theme_minimal(),
@@ -85,7 +83,7 @@ make_burden_figure <- function(linelist_raw,
     scale_x_date(
       date_breaks = "months",
       labels = scales::label_date_short(format = c("%Y", "%B")),
-      expand = expansion(mult = c(0.1, 0.05))
+      expand = expansion(mult = c(0.1, 0.02))
     ),
     scale_y_continuous(
       position = "right",
@@ -96,12 +94,14 @@ make_burden_figure <- function(linelist_raw,
     geom_vline(
       xintercept = ymd(date_variant_cutoff),
       color = "grey20",
-      linetype = "dashed"
+      linetype = "longdash"
     ),
     theme(
       legend.position = "bottom",
       axis.title.y.right = element_text(margin = margin(l = 0.5, unit = "cm")),
-      text = element_text(family = "Helvetica")
+      panel.grid.minor.y = element_blank(),
+      text = element_text(family = "Helvetica"),
+      plot.margin = margin(l = 1, unit = "cm")
     ),
     coord_cartesian(xlim = c(ymd("2021-07-04"), ymd("2022-02-07")))
   )
@@ -134,7 +134,8 @@ make_burden_figure <- function(linelist_raw,
           color = "grey90"
         )
       ) +
-      ggtitle("Notified cases and hospital bed occupancy over the Delta and Omicron/Delta epidemic periods", "Notified cases"),
+      ggtitle(NULL, "Notified cases"),
+    NULL,
     ggplot(all_occupancy %>% filter(group == "ward")) +
       geom_col(aes(x = date, y = count, fill = age_group),
         width = 0.75
@@ -162,6 +163,7 @@ make_burden_figure <- function(linelist_raw,
         )
       ) +
       ggtitle(NULL, "Ward bed occupancy"),
+    NULL,
     ggplot(all_occupancy %>% filter(group == "ICU")) +
       geom_col(aes(x = date, y = count, fill = age_group),
         width = 0.75
@@ -191,7 +193,7 @@ make_burden_figure <- function(linelist_raw,
       ),
     ncol = 1,
     align = "v",
-    rel_heights = c(0.95, 0.92, 0.92),
+    rel_heights = c(0.92, 0.1, 0.92, 0.1, 0.92),
     axis = "lrtb"
   )
 

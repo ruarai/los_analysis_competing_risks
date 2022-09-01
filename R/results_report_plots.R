@@ -40,11 +40,12 @@ make_reporting_plots_1 <- function(all_aj,
       scale_fill_manual(values = est_cols, labels = est_labels, name = "") +
       scale_color_manual(values = est_cols, labels = est_labels, name = "") +
       coord_cartesian(xlim = c(0, x_max)) +
-      ggtitle(i_title, i_subtitle) +
+      ggtitle(i_title, str_c("Ages ", i_subtitle)) +
       xlab(NULL) +
       ylab(NULL) +
       theme_minimal() +
-      theme(legend.position = if_else(legend_only, "bottom", "none"))
+      theme(legend.position = if_else(legend_only, "bottom", "none"),
+            text = element_text(family = "Helvetica"))
 
     if (legend_only) {
       get_legend(p)

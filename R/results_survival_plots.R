@@ -47,18 +47,19 @@ fit_plots <- fit_meta %>%
       ) +
       optional_facet +
       coord_cartesian(xlim = c(0, max_t_by_coding[i_comp])) +
-      #
-      # scale_fill_manual(values = est_cols, labels = est_labels, name = "") +
-      # scale_color_manual(values = est_cols, labels = est_labels, name = "") +
-      #
+
+      scale_fill_manual(values = est_cols, labels = est_labels, name = "") +
+      scale_color_manual(values = est_cols, labels = est_labels, name = "") +
+
       scale_x_continuous(breaks = t_breaks, minor_breaks = t_breaks_minor) +
       xlab(NULL) +
       ylab(NULL) +
       ggtitle(NULL, pretty_coding_name[i_comp]) +
       theme_minimal() +
       theme(
-        legend.position = "bottom",
-        plot.subtitle = element_text(face = "italic")
+        legend.position = "none",
+        plot.subtitle = element_text(face = "italic"),
+        text = element_text(family = "Helvetica")
       )
   })
 

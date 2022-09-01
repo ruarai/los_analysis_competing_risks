@@ -79,8 +79,7 @@ export_fit_samples <- function(surv_ward_to_next,
     scale_y_log10() +
     guides(colour = guide_legend(override.aes = list(alpha = 1, size = 1))) +
     theme_minimal() +
-    theme(legend.position = "bottom") +
-    ggtitle("Length of stay distribution parameter estimate samples")
+    theme(legend.position = "bottom")
 
 
   ggsave(

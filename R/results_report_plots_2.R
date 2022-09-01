@@ -47,6 +47,7 @@ make_reporting_plots_2 <- function(all_means,
       position = position_dodge(width = 0.25),
       size = 4, stroke = 2
       ) +
+      
       scale_color_manual(
         values = est_cols,
         labels = est_labels,
@@ -64,7 +65,8 @@ make_reporting_plots_2 <- function(all_means,
       theme(
         legend.position = if_else(legend_only, "bottom", "none"),
         plot.subtitle = element_text(size = 9, face = "italic"),
-        plot.title = element_text(size = 11)
+        plot.title = element_text(size = 11),
+        text = element_text(family = "Helvetica")
       )
 
     if (legend_only) {
