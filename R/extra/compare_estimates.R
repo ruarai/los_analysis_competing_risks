@@ -1,120 +1,80 @@
 
+
+library(tidyverse)
+library(lubridate)
+
 source("R/common.R")
 source("R/surv_ward_to_next_static.R")
 source("R/surv_ICU_to_next_static.R")
 
 
-# Load from completed retrospective run
-linelist_data_omi_mix <- tar_read(linelist_data_omi_mix)
-
-linelist_data_omi_HNE <- tar_read(linelist_data_omi_HNE)
-
-results_dir <- tar_read(results_dir)
-
-
-static_ward_omi_mix <- make_surv_ward_to_next(linelist_data_omi_mix)
-static_ward_omi_HNE <- make_surv_ward_to_next(linelist_data_omi_HNE)
-
-static_ICU_omi_mix <- make_surv_ICU_to_next(linelist_data_omi_mix)
-static_ICU_omi_HNE <- make_surv_ICU_to_next(linelist_data_omi_HNE)
-
-#save.image("old_data_plot.Rdata")
-
-old_samples <- bind_rows(
-  read_csv("results/NSW_final/omi_mix/estimate_samples_share_wide.csv",
-    show_col_types = FALSE
-  ) %>%
-    mutate(subset_name = "omi_mix"),
-  read_csv("results/NSW_final/omi_HNE/estimate_samples_share_wide.csv",
-    show_col_types = FALSE
-  ) %>%
-    mutate(subset_name = "omi_HNE")
-) %>%
-  select(
-    sample, age_group, subset_name,
-    shape_ward_to_discharge, shape_ward_to_ICU,
-    scale_ward_to_discharge, scale_ward_to_ICU,
-    shape_ICU_to_postICU,
-    scale_ICU_to_postICU
-  ) %>%
-  filter(age_group %in% c("0-9", "40-49", "70-79")) %>%
-  mutate(
-    mean_ward_to_discharge = shape_ward_to_discharge * scale_ward_to_discharge,
-    mean_ward_to_ICU = shape_ward_to_ICU * scale_ward_to_ICU,
-    mean_ICU_to_postICU = shape_ICU_to_postICU * scale_ICU_to_postICU
-  ) %>%
-  select(c(sample, age_group, subset_name, starts_with("mean"))) %>%
-  pivot_longer(starts_with("mean"),
-    names_to = "coding",
-    values_to = "mean",
-    names_prefix = "mean_"
-  ) %>%
-  mutate(
-    age_class_narrow = case_when(
-      age_group == "0-9" ~ "0-39",
-      age_group == "40-49" ~ "40-69",
-      age_group == "70-79" ~ "70+"
-    )
-  )
-
 # Load from completed real-time run
-old_means <- tar_read(all_means)
 
 
+get_means <- function(linelist_data_path) {
+  
+  linelist_data <- read_csv(linelist_data_path)
+  
+  static_ward_omi_mix <- make_surv_ward_to_next(linelist_data)
+  static_ICU_omi_mix <- make_surv_ICU_to_next(linelist_data)
+  
+  
+  bind_rows(
+    static_ward_omi_mix$fit_narrow %>%
+      filter(coding == "ward_to_discharge" | coding == "ward_to_ICU") %>%
+      mutate(subset_name = "omi_mix"),
+    static_ICU_omi_mix$fit_narrow %>%
+      filter(coding == "ICU_to_postICU") %>%
+      mutate(subset_name = "omi_mix"),
+  ) %>%
+    group_by(subset_name, coding, age_class_narrow) %>%
+    summarise(mean_lower = quantile(mean, 0.025),
+              mean_upper = quantile(mean, 0.975),
+              mean = mean(mean),
+              .groups = "drop")
+}
 
-static_means <- bind_rows(
-  static_ward_omi_mix$fit_narrow %>%
-    filter(coding == "ward_to_discharge" | coding == "ward_to_ICU") %>%
-    mutate(subset_name = "omi_mix"),
-  static_ward_omi_HNE$fit_narrow %>%
-    filter(coding == "ward_to_discharge" | coding == "ward_to_ICU") %>%
-    mutate(subset_name = "omi_HNE"),
-  static_ICU_omi_mix$fit_narrow %>%
-    filter(coding == "ICU_to_postICU") %>%
-    mutate(subset_name = "omi_mix"),
-  static_ICU_omi_HNE$fit_narrow %>%
-    filter(coding == "ICU_to_postICU") %>%
-    mutate(subset_name = "omi_HNE")
-) %>%
-  group_by(subset_name, coding, age_class_narrow) %>%
-  summarise(mean_lower = quantile(mean, 0.025),
-            mean_upper = quantile(mean, 0.975),
-            mean = mean(mean))
+old_means <- read_csv("results/NSW_final_earlycutoff/all_means.csv")
 
+means_retro <- get_means("results/NSW_retro_earlycutoff/omi_mix/linelist_data.csv") %>%
+  mutate(group = "new")
 
-save.image("results/NSW_retro/pre_plot_estimates_comparison.rds")
+means_naive <- get_means("results/NSW_final_naive/omi_mix/linelist_data.csv") %>%
+  mutate(group = "naive")
 
 plot_data <- bind_rows(
-  static_means %>%
-    mutate(group = "new"),
+  means_retro,
+  means_naive,
   old_means %>%
     filter(age_type == "narrow",
-           coding %in% c("ward_to_discharge", "ward_to_ICU", "ICU_to_postICU"),
-           subset_name %in% c("omi_mix", "omi_HNE")) %>%
+           coding %in% c("ward_to_discharge", "ward_to_ICU", "ICU_to_postICU")) %>%
     rename(age_class_narrow = age_class) %>%
     mutate(group = "old")
 ) %>%
   mutate(
-    group = factor(group, c("old", "new")),
+    group = factor(group, c("old", "new", "naive")),
     subset_name = est_labels[subset_name],
     subset_name = factor(subset_name, est_labels),
-    coding = factor(coding, c("ward_to_discharge", "ward_to_ICU", "ICU_to_postICU"))
+    coding = pretty_coding_name[coding],
+    coding = factor(coding, pretty_coding_name),
   )
 
 
 
 plot_data %>%
+  filter(subset_name == est_labels["omi_mix"]) %>%
   ggplot() +
   geom_linerange(aes(
     x = age_class_narrow, ymin = mean_lower, ymax = mean_upper,
     group = group, colour = group
   ),
   position = position_dodge(width = 0.25),
-  size = 0.6
+  size = 0.5
   ) +
   geom_point(aes(
     x = age_class_narrow, y = mean,
-    group = group, colour = group
+    group = group, colour = group,
+    size = 0.1, stroke = 0.2
   ),
   position = position_dodge(width = 0.25),
   size = 2
@@ -128,10 +88,11 @@ plot_data %>%
     expand = expansion(mult = c(0.05, 0.5))
   ) +
   ggokabeito::scale_colour_okabe_ito(
-    order = c(5, 7),
+    order = c(5, 7, 6),
     labels = c(
       "old" = "Real-time",
-      "new" = "Retrospective"
+      "new" = "Retrospective",
+      "naive" = "Real-time (not accounting for censoring)"
     ),
     name = "Data used for estimate"
   ) +
@@ -149,7 +110,7 @@ plot_data %>%
 
 
 ggsave(
-  paste0(results_dir, "/estimates_comparison.png"),
+  paste0(results_dir, "/estimates_comparison_2.png"),
   bg = "white",
   width = 9, height = 5
 )

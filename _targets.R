@@ -43,7 +43,7 @@ source("R/clinical_burden.R")
 
 data_subsets <- tibble::tribble(
   ~subset_name, ~date_start, ~date_end, ~LHD_filter, ~do_remove_adm_delay, ~do_remove_episodes_sep,
-  "omi_mix", "2021-12-15", NA, NA_character_, TRUE, TRUE,
+  "omi_mix", "2021-12-15", "2022-02-02", NA_character_, TRUE, TRUE,
   # "no_surv", "2022-05-01", NA, NA_character_, TRUE, TRUE,
   "delta", "2021-07-01", "2021-12-15", NA_character_, TRUE, TRUE,
   "omi_HNE", "2021-12-15", "2022-02-10", "Hunter New England LHD", TRUE, TRUE,
@@ -53,8 +53,8 @@ data_subsets <- tibble::tribble(
 
 pre_subsets <- list(
   tar_target(NSW_LHD_filter, NULL),
-  tar_target(results_name_prefix, "NSW_final"),
-  tar_target(linelist_path, "~/data_private/NSW/NSW_out_episode_2022_02_08.xlsx"),
+  tar_target(results_name_prefix, "NSW_retro_earlycutoff"),
+  tar_target(linelist_path, "~/source/email_digester/downloads/hospital_linelist/NSW_out_episode_2022_08_29.xlsx"),
   tar_target(
     linelist_raw,
     {
@@ -124,6 +124,10 @@ for_each_subset <- tar_map(
       ll_results$diagnostics %>%
         pivot_longer(everything()) %>%
         write_csv(paste0(results_dir, "/linelist_filtering.csv"))
+      
+      
+      ll_data %>%
+        write_csv(paste0(results_dir, "linelist_data.csv"))
 
       return(ll_data)
     }
@@ -215,6 +219,14 @@ list(
     for_each_subset[["fit_means"]],
     command = dplyr::bind_rows(!!!.x)
   ),
+  tar_target(
+    all_means_save,
+    {
+      all_means %>% write_csv(str_c(results_dir, "/all_means.csv"))
+    }
+  ),
+  
+  
   tar_combine(
     all_total_los,
     for_each_subset[["fit_total_los"]],

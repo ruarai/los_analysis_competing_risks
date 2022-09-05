@@ -81,7 +81,7 @@ make_summary_mean_tbl <- function(all_means,
     col.names = c(rep(" ", times = 10)),
     align = c("l", "l", "l", "r", "r", "wr{0.7cm}", "wr{0.5cm}", "r", "wr{0.7cm}", "wr{0.5cm}"),
     format = "latex",
-    booktabs = TRUE,
+    booktabs = FALSE,
     linesep = "",
   ) %>%
     kable_styling(font_size = 8) %>%

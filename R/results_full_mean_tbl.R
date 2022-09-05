@@ -96,12 +96,12 @@ kbl(
   col.names = c("Pathway", "Age group", rep(c("n", "", "", ""), times = 3)),
   align = c("l", "l", rep(c("r", "d", "x", "y"), times = 3)),
   format = "latex",
-  booktabs = TRUE,
+  booktabs = FALSE,
   linesep = ""
 ) %>%
   kable_styling(font_size = 8) %>%
-  collapse_rows(1) %>%
-  add_header_above(c("Pathway" = 1, "Age group" = 1, "Delta" = 4, "Omicron-Delta" = 4, "Omicron (HNE)" = 4),
-    align = "l"
-  ) %>%
+  #collapse_rows(1) %>%
+  # add_header_above(c("Pathway" = 1, "Age group" = 1, "Delta" = 4, "Omicron-Delta" = 4, "Omicron (HNE)" = 4),
+  #   align = "l"
+  # ) %>%
   write_file(paste0(results_dir, "/tbl_summary_means_full.tex"))
