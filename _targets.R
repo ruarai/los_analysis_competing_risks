@@ -17,44 +17,25 @@ library(future.callr)
 plan(callr)
 
 
-source("../clinical_forecasting/R/state_data/NSW.R")
+source("R/read_NSW_data_all.R")
+
 source("R/common.R")
 
 source("R/fit_meta.R")
 
-source("R/surv_ward_to_next.R")
-source("R/surv_ICU_to_next.R")
-source("R/surv_postICU_to_next.R")
-
-source("R/get_fit_aj.R")
-source("R/get_fit_params.R")
-source("R/get_fit_means.R")
-source("R/get_fit_total_los.R")
-
-source("R/export_fits.R")
-source("R/extra/make_estimate_samples.R")
-
-source("R/results_report_plots.R")
-source("R/results_report_plots_2.R")
-source("R/results_report_plots_3.R")
-source("R/results_summary_mean_tbl.R")
-
-source("R/clinical_burden.R")
+source("R/make_surv_static.R")
+source("R/export_static_14day_fits.R")
 
 data_subsets <- tibble::tribble(
-  ~subset_name, ~date_start, ~date_end, ~LHD_filter, ~do_remove_adm_delay, ~do_remove_episodes_sep,
-  "omi_mix", "2021-12-15", "2022-02-02", NA_character_, TRUE, TRUE,
-  # "no_surv", "2022-05-01", NA, NA_character_, TRUE, TRUE,
-  "delta", "2021-07-01", "2021-12-15", NA_character_, TRUE, TRUE,
-  "omi_HNE", "2021-12-15", "2022-02-10", "Hunter New England LHD", TRUE, TRUE,
+  ~subset_name, ~date_start, ~date_end, 
+  "omi_BA5", "2022-06-01", "2022-11-01", 
 )
 
 
 
 pre_subsets <- list(
-  tar_target(NSW_LHD_filter, NULL),
-  tar_target(results_name_prefix, "NSW_retro_earlycutoff"),
-  tar_target(linelist_path, "~/source/email_digester/downloads/hospital_linelist/NSW_out_episode_2022_08_29.xlsx"),
+  tar_target(results_name_prefix, "NSW_2022-11-07_14day_2"),
+  tar_target(linelist_path, "~/source/email_digester/downloads/hospital_linelist/NSW_out_episode_2022_11_07.xlsx"),
   tar_target(
     linelist_raw,
     {
@@ -93,11 +74,6 @@ for_each_subset <- tar_map(
     {
       ll_raw <- linelist_raw
 
-      if (!is.na(LHD_filter)) {
-        ll_raw <- ll_raw %>%
-          filter(lhd_name == LHD_filter)
-      }
-
       if (!is.na(date_start)) {
         ll_raw <- ll_raw %>%
           filter(admit_date_dt >= ymd(date_start))
@@ -107,150 +83,35 @@ for_each_subset <- tar_map(
         ll_raw <- ll_raw %>%
           filter(admit_date_dt < ymd(date_end))
       }
-
-
-      ll_results <- read_NSW_linelist(
+      
+      
+      ll_data <- read_NSW_data(
         ll_raw,
-        remove_adm_delay = do_remove_adm_delay,
-        remove_sep_episodes = do_remove_episodes_sep,
-        return_diagnostics = TRUE
+        truncate14days = TRUE,
+        no_postICU = TRUE
       )
-
-      ll_data <- ll_results$data
-      print(date_start)
-      print(date_end)
-      print(LHD_filter)
-
-      ll_results$diagnostics %>%
-        pivot_longer(everything()) %>%
-        write_csv(paste0(results_dir, "/linelist_filtering.csv"))
       
-      
-      ll_data %>%
-        write_csv(paste0(results_dir, "linelist_data.csv"))
-
       return(ll_data)
     }
   ),
+  
   tar_target(
-    surv_ward_to_next,
-    make_surv_ward_to_next(
-      linelist_data
-    )
+    ward_fit,
+    make_surv_static(linelist_data, "ward", date_data_load)
   ),
+  
   tar_target(
-    surv_ICU_to_next,
-    make_surv_ICU_to_next(
-      linelist_data
-    )
+    ICU_fit,
+    make_surv_static(linelist_data, "ICU", date_data_load)
   ),
+  
   tar_target(
-    surv_postICU_to_next,
-    make_surv_postICU_to_next(
-      linelist_data
-    )
-  ),
-  tar_target(
-    fit_aj,
-    get_fit_aj(
-      surv_ward_to_next,
-      surv_ICU_to_next,
-      surv_postICU_to_next
-    ) %>%
-      mutate(subset_name = subset_name)
-  ),
-  tar_target(
-    fit_params,
-    get_fit_params(
-      surv_ward_to_next,
-      surv_ICU_to_next,
-      surv_postICU_to_next
-    ) %>%
-      mutate(subset_name = subset_name)
-  ),
-  tar_target(
-    fit_means,
-    get_fit_means(
-      surv_ward_to_next,
-      surv_ICU_to_next,
-      surv_postICU_to_next
-    ) %>%
-      mutate(subset_name = subset_name)
-  ),
-  tar_target(
-    fit_total_los,
-    get_fit_total_los(
-      surv_ward_to_next,
-      surv_ICU_to_next,
-      surv_postICU_to_next
-    ) %>%
-      mutate(subset_name = subset_name)
-  ),
-  tar_target(
-    fit_export_file,
-    export_fits(
-      fit_params,
-      results_dir
-    ),
-    format = "file"
-  ),
-  tar_target(
-    fit_samples_export,
-    export_fit_samples(
-      surv_ward_to_next,
-      surv_ICU_to_next,
-      surv_postICU_to_next,
-      fit_means,
-      results_dir
-    )
+    fit_exports,
+    export_static_14day_fits(ward_fit, ICU_fit, results_dir)
   )
 )
 
 list(
   pre_subsets,
-  for_each_subset,
-  tar_combine(
-    all_aj,
-    for_each_subset[["fit_aj"]],
-    command = dplyr::bind_rows(!!!.x)
-  ),
-  tar_combine(
-    all_means,
-    for_each_subset[["fit_means"]],
-    command = dplyr::bind_rows(!!!.x)
-  ),
-  tar_target(
-    all_means_save,
-    {
-      all_means %>% write_csv(str_c(results_dir, "/all_means.csv"))
-    }
-  ),
-  
-  
-  tar_combine(
-    all_total_los,
-    for_each_subset[["fit_total_los"]],
-    command = dplyr::bind_rows(!!!.x)
-  ),
-
-  tar_target(
-    reporting_plots_1,
-    make_reporting_plots_1(all_aj, results_dir)
-  ),
-
-  tar_target(
-    reporting_plots_2,
-    make_reporting_plots_2(all_means, results_dir)
-  ),
-
-  tar_target(
-    reporting_summary_mean_tbl,
-    make_summary_mean_tbl(all_means, results_dir)
-  )
-
-  # tar_target(
-  #   reporting_burden,
-  #
-  #   make_burden_figure(linelist_raw, date_data_load, ymd("2021-12-15"), results_dir)
-  # )
+  for_each_subset
 )

@@ -3,39 +3,18 @@
 make_surv_ward_to_next <- function(linelist_data) {
   require(flexsurv)
 
-  code_ward_compartment <- function(is_still_in_hosp, ever_in_icu, patient_died) {
-    case_when(
-      ever_in_icu ~ "ward_to_ICU",
-      is_still_in_hosp ~ "censored",
-      patient_died ~ "ward_to_death",
-      TRUE ~ "ward_to_discharge"
-    )
-  }
 
-
+  
   ward_modelling <- linelist_data %>%
+    filter(compartment == "ward") %>%
     mutate(
-      coding = code_ward_compartment(
-        is_still_in_hosp,
-        ever_in_icu,
-        patient_died
-      ),
-      censor_code = if_else(coding == "censored", 0, 1),
-      LoS = case_when(
-        coding == "ward_to_ICU" ~ time_diff_to_days(dt_first_icu - dt_hosp_admission),
-        TRUE ~ time_diff_to_days(dt_hosp_discharge - dt_hosp_admission)
-      ),
-      LoS = if_else(LoS == 0, 0.01, LoS),
+      coding = str_c("ward_to_", trans),
       age_class_narrow = cut_age(age, get_narrow_age_table()),
-      age_class_wide = cut_age(age, get_wide_age_table())
+      age_class_wide = cut_age(age, get_wide_age_table()),
+      censor_code = if_else(still_in_hospital, 0, 1)
     ) %>%
-    mutate(
-      coding = if_else(coding == "censored", NA_character_, coding),
-      coding = factor(coding, levels = c("ward_to_death", "ward_to_discharge", "ward_to_ICU"))
-    ) %>%
-    filter(LoS > 0) %>%
-    select(coding, censor_code, LoS, age_class_narrow, age_class_wide)
-
+    select(coding, censor_code, LoS = los, age_class_narrow, age_class_wide)
+  
   print("Fitting narrow estimates...")
 
 
