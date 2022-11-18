@@ -2,8 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
-
 _targets
 results/
 *.csv
 *.png
+results
+*.pdf
+*.Rdata
