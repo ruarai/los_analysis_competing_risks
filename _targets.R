@@ -21,8 +21,6 @@ source("R/read_NSW_data_all.R")
 
 source("R/common.R")
 
-source("R/fit_meta.R")
-
 source("R/make_surv_static.R")
 source("R/export_static_14day_fits.R")
 
@@ -35,7 +33,7 @@ data_subsets <- tibble::tribble(
 
 pre_subsets <- list(
   tar_target(results_name_prefix, "NSW_2022-11-07_14day_2"),
-  tar_target(linelist_path, "~/source/email_digester/downloads/hospital_linelist/NSW_out_episode_2022_11_07.xlsx"),
+  tar_target(linelist_path, "~/source/email_digester/downloads/hospital_linelist/NSW_out_episode_2022_11_22.xlsx"),
   tar_target(
     linelist_raw,
     {
