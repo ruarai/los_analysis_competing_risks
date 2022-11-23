@@ -1,5 +1,5 @@
 
-make_surv_ICU_to_next <- function(linelist_data) {
+make_surv_ICU_to_next <- function(linelist_data, n_bootstraps_fit = 50) {
   require(flexsurv)
 
   code_ICU_compartment <- function(is_still_in_icu, received_postICU_care, patient_died) {
@@ -30,9 +30,6 @@ make_surv_ICU_to_next <- function(linelist_data) {
     mutate(coding = if_else(coding == "censored", NA_character_, coding)) %>%
     select(coding, censor_code, LoS, age_class_narrow, age_class_wide) %>%
     filter(LoS > 0)
-
-
-  n_bootstraps_fit <- 50
 
   get_fit_los <- function(data) {
     data %>%

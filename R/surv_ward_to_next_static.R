@@ -1,6 +1,6 @@
 
 
-make_surv_ward_to_next <- function(linelist_data) {
+make_surv_ward_to_next <- function(linelist_data, n_bootstraps_fit = 50) {
   require(flexsurv)
 
   code_ward_compartment <- function(is_still_in_hosp, ever_in_icu, patient_died) {
@@ -35,9 +35,6 @@ make_surv_ward_to_next <- function(linelist_data) {
     ) %>%
     filter(LoS > 0) %>%
     select(coding, censor_code, LoS, age_class_narrow, age_class_wide)
-
-
-  n_bootstraps_fit <- 50
 
   get_fit_los <- function(data) {
     data %>%
