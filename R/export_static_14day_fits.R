@@ -1,7 +1,7 @@
 
 export_static_14day_fits <- function(
-    ward_fit_omi_BA5,
-    ICU_fit_omi_BA5,
+    ward_fit,
+    ICU_fit,
     results_dir
 ) {
   
