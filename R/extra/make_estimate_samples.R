@@ -146,7 +146,7 @@ export_fit_samples <- function(surv_ward_to_next,
   round2 <- function(x) if_else(is.na(x), NA_character_, format(round(x, 2), nsmall = 2))
 
   tbl_data <- left_join(
-    samples %>%
+    samples %>% 
       group_by(age_class, coding, name) %>%
       summarise(
         mean = mean(value),
@@ -169,7 +169,11 @@ export_fit_samples <- function(surv_ward_to_next,
       group_by(coding, age_class) %>%
       filter(name %in% c("shape", "scale")) %>%
       pivot_wider() %>%
-      summarise(corr = cor(log(scale), log(shape)))
+      mutate(median = qgamma(0.5, shape = shape, scale = scale)) %>%
+      summarise(corr = cor(log(scale), log(shape)),
+                median_mean = mean(median),
+                median_u95 = quantile(median, 0.975),
+                median_l95 = quantile(median, 0.025))
   ) %>%
     left_join(
       fit_means %>%
@@ -180,10 +184,10 @@ export_fit_samples <- function(surv_ward_to_next,
     ) %>%
     mutate(coding = factor(coding, levels = fit_meta$i_comp)) %>%
     mutate(across(
-      c(scale_mean, scale_l95, scale_u95, shape_mean, shape_l95, shape_u95, corr, prob_mean, prob_l95, prob_u95),
+      c(scale_mean, scale_l95, scale_u95, shape_mean, shape_l95, shape_u95, median_mean, median_l95, median_u95, corr, prob_mean, prob_l95, prob_u95),
       round2
     )) %>%
-    select(coding, age_class, n, scale_mean, scale_l95, scale_u95, shape_mean, shape_l95, shape_u95, corr, prob_mean, prob_l95, prob_u95) %>%
+    select(coding, age_class, n, scale_mean, scale_l95, scale_u95, shape_mean, shape_l95, shape_u95, median_mean, median_l95, median_u95, corr, prob_mean, prob_l95, prob_u95) %>%
     arrange(coding, age_class)
 
   require(kableExtra)
@@ -191,8 +195,8 @@ export_fit_samples <- function(surv_ward_to_next,
 
   kbl(
     tbl_data,
-    col.names = rep("", times = 13),
-    align = c("l", "l", rep("r", times = 11)),
+    col.names = rep("", times = 16),
+    align = c("l", "l", rep("r", times = 14)),
     format = "latex",
     booktabs = TRUE,
     linesep = ""
@@ -200,7 +204,7 @@ export_fit_samples <- function(surv_ward_to_next,
     collapse_rows(1) %>%
     add_header_above(c(
       "Pathway" = 1, "Age group" = 1, "n" = 1,
-      "Scale" = 3, "Shape" = 3, "Cor." = 1, "Probability" = 3
+      "Scale" = 3, "Shape" = 3, "Median" = 3, "Cor." = 1, "Probability" = 3
     ),
     align = "l"
     ) %>%
